@@ -1,0 +1,11 @@
+# Exclude host-compiled native binaries — Docker will do its own npm ci
+node_modules/
+# Don't leak the .env file into the image
+.env
+.env.local
+# Exclude Next.js build output (built inside Docker)
+.next/
+# SQLite data directory
+data/
+# Git
+.git/

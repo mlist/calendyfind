@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p app/api/auth/\\\\[...all\\\\] app/\\\\\\(app\\\\\\)/dashboard app/\\\\\\(admin\\\\\\)/admin app/login lib/db/schema lib/auth lib/availability lib/adapters lib/ics lib/crypto test/fixtures scripts data && touch lib/availability/.gitkeep lib/adapters/.gitkeep lib/ics/.gitkeep lib/crypto/.gitkeep test/fixtures/.gitkeep && ls -R)",
+      "Bash(pnpm install *)",
+      "Bash(npm --version)",
+      "Bash(npm install *)"
+    ],
+    "additionalDirectories": [
+      "/Users/markuslist/repositories/calendyfind/app/api/auth"
+    ]
+  }
+}
