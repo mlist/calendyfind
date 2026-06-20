@@ -30,12 +30,13 @@ export default async function SettingsPage({ searchParams }: PageProps) {
   if (!session) redirect('/login');
 
   const [profile] = await db
-    .select({ timezone: user.timezone, workingHours: user.workingHours })
+    .select({ timezone: user.timezone, workingHours: user.workingHours, notificationEmail: user.notificationEmail })
     .from(user)
     .where(eq(user.id, session.user.id))
     .limit(1);
 
   const timezone = profile?.timezone ?? 'UTC';
+  const notificationEmail = profile?.notificationEmail ?? '';
   let wh: WorkingHours = {};
   try {
     wh = JSON.parse(profile?.workingHours ?? '{}') as WorkingHours;
@@ -96,6 +97,21 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           <p style={{ marginTop: 6, fontSize: 12, color: '#6b7280' }}>
             Working hours below are interpreted in this timezone.
           </p>
+        </section>
+
+        <section>
+          <h2 style={{ marginBottom: '0.75rem', fontSize: 16 }}>Notification Email</h2>
+          <p style={{ marginBottom: '0.5rem', fontSize: 12, color: '#6b7280' }}>
+            Optional. When set, this address is added as an attendee on every booking — useful
+            for having the event appear on a work/Exchange calendar automatically via iMIP.
+          </p>
+          <input
+            type="email"
+            name="notificationEmail"
+            defaultValue={notificationEmail}
+            placeholder="e.g. you@work.example.com"
+            style={{ ...inp, minWidth: 280 }}
+          />
         </section>
 
         <section>

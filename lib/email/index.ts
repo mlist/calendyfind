@@ -44,26 +44,30 @@ function getFrom(): string {
 
 export interface SendInviteOpts extends ImipBaseOpts {
   pageTitle: string;
+  /** Additional recipients (notification email, extra guests). */
+  extraRecipients?: { name: string; email: string }[];
 }
 
 /**
- * Send a METHOD:REQUEST iMIP invite to the attendee.
+ * Send a METHOD:REQUEST iMIP invite to the attendee and any extra recipients.
  *
  * Structure: multipart/mixed
  *   └─ multipart/alternative
  *        ├─ text/plain (human-readable)
  *        └─ text/calendar; method=REQUEST   ← mail clients render RSVP UI here
  *   └─ application/ics attachment           ← fallback for clients that need it
+ *
+ * The ICS (containing all ATTENDEE lines) is sent once to the primary attendee,
+ * then best-effort to each extra recipient so they can accept/add the event.
  */
 export async function sendInviteEmail(opts: SendInviteOpts): Promise<void> {
   const transport = createTransport();
   const icsContent = generateRequestIcs(opts);
-
   const startStr = opts.startUtc.toUTCString();
 
-  await transport.sendMail({
+  const buildMail = (toName: string, toEmail: string) => ({
     from:    getFrom(),
-    to:      `"${opts.attendeeName}" <${opts.attendeeEmail}>`,
+    to:      `"${toName}" <${toEmail}>`,
     subject: `Meeting invitation: ${opts.summary}`,
     text:    [
       `You have been invited to a meeting.`,
@@ -84,6 +88,14 @@ export async function sendInviteEmail(opts: SendInviteOpts): Promise<void> {
       contentType: 'application/ics',
     }],
   });
+
+  await transport.sendMail(buildMail(opts.attendeeName, opts.attendeeEmail));
+
+  for (const r of opts.extraRecipients ?? []) {
+    try {
+      await transport.sendMail(buildMail(r.name, r.email));
+    } catch { /* best-effort */ }
+  }
 }
 
 // ─── Internal (multi-attendee) email helpers ──────────────────────────────────
@@ -213,17 +225,22 @@ export async function sendReminderEmail(opts: ReminderEmailOpts): Promise<void> 
   });
 }
 
+export interface SendCancelOpts extends ImipBaseOpts {
+  /** Additional recipients (notification email, extra guests) to send the CANCEL to. */
+  extraRecipients?: { name: string; email: string }[];
+}
+
 /**
- * Send a METHOD:CANCEL iMIP notice to the attendee.
+ * Send a METHOD:CANCEL iMIP notice to the attendee and any extra recipients.
  * Uses same UID + bumped SEQUENCE so mail clients retract the event.
  */
-export async function sendCancelEmail(opts: ImipBaseOpts): Promise<void> {
+export async function sendCancelEmail(opts: SendCancelOpts): Promise<void> {
   const transport = createTransport();
   const icsContent = generateCancelIcs(opts);
 
-  await transport.sendMail({
+  const buildMail = (toName: string, toEmail: string) => ({
     from:    getFrom(),
-    to:      `"${opts.attendeeName}" <${opts.attendeeEmail}>`,
+    to:      `"${toName}" <${toEmail}>`,
     subject: `Cancelled: ${opts.summary}`,
     text:    [
       `Your meeting has been cancelled.`,
@@ -241,4 +258,12 @@ export async function sendCancelEmail(opts: ImipBaseOpts): Promise<void> {
       contentType: 'application/ics',
     }],
   });
+
+  await transport.sendMail(buildMail(opts.attendeeName, opts.attendeeEmail));
+
+  for (const r of opts.extraRecipients ?? []) {
+    try {
+      await transport.sendMail(buildMail(r.name, r.email));
+    } catch { /* best-effort */ }
+  }
 }

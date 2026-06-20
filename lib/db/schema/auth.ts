@@ -29,6 +29,8 @@ export const user = sqliteTable('user', {
   // Phase 1 profile fields
   timezone: text('timezone').notNull().default('UTC'),
   workingHours: text('working_hours').notNull().default('{}'),
+  // Optional work/notification email — receives iMIP invites for every booking
+  notificationEmail: text('notification_email'),
 });
 
 export const session = sqliteTable('session', {

@@ -18,18 +18,18 @@ export async function cancelAction(cancelToken: string) {
   const booking = result.booking;
   const now = new Date();
 
-  // Get booking page to find the write target
+  // Get booking page to find the write target and extra guests
   const page = booking.bookingPageId
     ? db
-        .select({ writeTargetId: bookingPageTable.writeTargetId })
+        .select({ writeTargetId: bookingPageTable.writeTargetId, extraGuests: bookingPageTable.extraGuests })
         .from(bookingPageTable)
         .where(eq(bookingPageTable.id, booking.bookingPageId))
         .get()
     : undefined;
 
-  // Get organizer name + email for iMIP CANCEL
+  // Get organizer name + email + notification email for iMIP CANCEL
   const organizer = db
-    .select({ name: userTable.name, email: userTable.email })
+    .select({ name: userTable.name, email: userTable.email, notificationEmail: userTable.notificationEmail })
     .from(userTable)
     .where(eq(userTable.id, booking.organizerUserId))
     .get();
@@ -51,8 +51,19 @@ export async function cancelAction(cancelToken: string) {
     }
   }
 
-  // Best-effort: send iMIP METHOD:CANCEL email to attendee.
+  // Best-effort: send iMIP METHOD:CANCEL email to attendee + extra recipients.
   if (organizer) {
+    const extraRecipients: { name: string; email: string }[] = [];
+    if (organizer.notificationEmail) {
+      extraRecipients.push({ name: organizer.name, email: organizer.notificationEmail });
+    }
+    if (page?.extraGuests) {
+      for (const raw of page.extraGuests.split(',')) {
+        const email = raw.trim();
+        if (email) extraRecipients.push({ name: email, email });
+      }
+    }
+
     try {
       await sendCancelEmail({
         uid:            booking.icsUid,
@@ -66,6 +77,7 @@ export async function cancelAction(cancelToken: string) {
         attendeeEmail:  booking.attendeeEmail,
         createdAt:      booking.createdAt ?? now,
         now,
+        extraRecipients,
       });
     } catch { /* ignore */ }
   }

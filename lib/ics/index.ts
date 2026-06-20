@@ -100,6 +100,8 @@ export interface ImipBaseOpts {
   organizerEmail: string;
   attendeeName: string;
   attendeeEmail: string;
+  /** Extra attendees (notification email, extra guests) included as ATTENDEE lines. */
+  extraAttendees?: { name: string; email: string }[];
   createdAt: Date;
   now: Date;
 }
@@ -131,6 +133,16 @@ export function generateRequestIcs(opts: ImipBaseOpts): string {
       `ATTENDEE;CN="${escapePropValue(opts.attendeeName)}";ROLE=REQ-PARTICIPANT;` +
       `RSVP=TRUE;PARTSTAT=NEEDS-ACTION:mailto:${opts.attendeeEmail}`,
     ),
+  );
+
+  for (const extra of opts.extraAttendees ?? []) {
+    lines.push(foldLine(
+      `ATTENDEE;CN="${escapePropValue(extra.name)}";ROLE=REQ-PARTICIPANT;` +
+      `RSVP=TRUE;PARTSTAT=NEEDS-ACTION:mailto:${extra.email}`,
+    ));
+  }
+
+  lines.push(
     prop('CREATED',  icsDate(opts.createdAt)),
     prop('DTSTAMP',  icsDate(opts.now)),
     prop('SEQUENCE', String(opts.sequence)),
@@ -256,12 +268,19 @@ export function generateCancelIcs(opts: ImipBaseOpts): string {
     prop('SUMMARY',  escapePropValue(opts.summary)),
     foldLine(`ORGANIZER;CN="${escapePropValue(opts.organizerName)}":mailto:${opts.organizerEmail}`),
     foldLine(`ATTENDEE;CN="${escapePropValue(opts.attendeeName)}":mailto:${opts.attendeeEmail}`),
+  ];
+
+  for (const extra of opts.extraAttendees ?? []) {
+    lines.push(foldLine(`ATTENDEE;CN="${escapePropValue(extra.name)}":mailto:${extra.email}`));
+  }
+
+  lines.push(
     prop('DTSTAMP',  icsDate(opts.now)),
     prop('SEQUENCE', String(opts.sequence)),
     prop('STATUS',   'CANCELLED'),
     'END:VEVENT',
     'END:VCALENDAR',
-  ];
+  );
 
   return lines.join('\r\n') + '\r\n';
 }

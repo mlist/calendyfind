@@ -45,8 +45,9 @@ export async function createPageAction(formData: FormData) {
   const bufferMin   = Number(formData.get('bufferMin')   ?? '0');
   const minNoticeMin = Number(formData.get('minNoticeMin') ?? '60');
   const maxAdvanceDays = Number(formData.get('maxAdvanceDays') ?? '30');
-  const location    = (formData.get('location') as string)?.trim() || null;
+  const location      = (formData.get('location') as string)?.trim() || null;
   const writeTargetId = (formData.get('writeTargetId') as string)?.trim() || null;
+  const extraGuests   = (formData.get('extraGuests') as string)?.trim() || null;
 
   const durationOptions = parseDurationOptionsInput(formData.get('durationOptions') as string);
 
@@ -76,6 +77,7 @@ export async function createPageAction(formData: FormData) {
     maxAdvanceDays,
     location,
     writeTargetId,
+    extraGuests,
     active: true,
   }).run();
 
@@ -97,8 +99,9 @@ export async function updatePageAction(formData: FormData) {
   const bufferMin   = Number(formData.get('bufferMin'));
   const minNoticeMin = Number(formData.get('minNoticeMin'));
   const maxAdvanceDays = Number(formData.get('maxAdvanceDays'));
-  const location    = (formData.get('location') as string)?.trim() || null;
+  const location      = (formData.get('location') as string)?.trim() || null;
   const writeTargetId = (formData.get('writeTargetId') as string)?.trim() || null;
+  const extraGuests   = (formData.get('extraGuests') as string)?.trim() || null;
   const durationOptions = parseDurationOptionsInput(formData.get('durationOptions') as string);
 
   if (!title) redirect(`/settings/booking-pages/${id}?error=Title+is+required`);
@@ -111,7 +114,7 @@ export async function updatePageAction(formData: FormData) {
     if (!wt) redirect(`/settings/booking-pages/${id}?error=Invalid+write+target`);
   }
 
-  db.update(bookingPage).set({ title, durationOptions: JSON.stringify(durationOptions), bufferMin, minNoticeMin, maxAdvanceDays, location, writeTargetId })
+  db.update(bookingPage).set({ title, durationOptions: JSON.stringify(durationOptions), bufferMin, minNoticeMin, maxAdvanceDays, location, writeTargetId, extraGuests })
     .where(and(eq(bookingPage.id, id), eq(bookingPage.userId, user.id)))
     .run();
 
@@ -167,16 +170,16 @@ export async function ownerCancelBookingAction(formData: FormData) {
     .where(eq(bookingTable.id, bookingId))
     .run();
 
-  // Get page for write target (bookingPageId is null for internal meetings)
+  // Get page for write target and extra guests (bookingPageId is null for internal meetings)
   const page = b.bookingPageId
-    ? db.select({ writeTargetId: bookingPage.writeTargetId })
+    ? db.select({ writeTargetId: bookingPage.writeTargetId, extraGuests: bookingPage.extraGuests })
       .from(bookingPage)
       .where(eq(bookingPage.id, b.bookingPageId))
       .get()
     : null;
 
-  // Get organizer info for iMIP CANCEL
-  const organizer = db.select({ name: userTable.name, email: userTable.email })
+  // Get organizer info (including notification email) for iMIP CANCEL
+  const organizer = db.select({ name: userTable.name, email: userTable.email, notificationEmail: userTable.notificationEmail })
     .from(userTable)
     .where(eq(userTable.id, user.id))
     .get();
@@ -192,8 +195,19 @@ export async function ownerCancelBookingAction(formData: FormData) {
     }
   }
 
-  // Best-effort: send iMIP CANCEL email to attendee
+  // Best-effort: send iMIP CANCEL email to attendee + extra recipients
   if (organizer) {
+    const extraRecipients: { name: string; email: string }[] = [];
+    if (organizer.notificationEmail) {
+      extraRecipients.push({ name: organizer.name, email: organizer.notificationEmail });
+    }
+    if (page?.extraGuests) {
+      for (const raw of page.extraGuests.split(',')) {
+        const email = raw.trim();
+        if (email) extraRecipients.push({ name: email, email });
+      }
+    }
+
     try {
       await sendCancelEmail({
         uid:            b.icsUid,
@@ -207,6 +221,7 @@ export async function ownerCancelBookingAction(formData: FormData) {
         attendeeEmail:  b.attendeeEmail,
         createdAt:      b.createdAt ?? now,
         now,
+        extraRecipients,
       });
     } catch { /* ignore */ }
   }

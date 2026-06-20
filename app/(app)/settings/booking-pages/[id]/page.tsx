@@ -99,6 +99,19 @@ export default async function BookingPageDetail({
         <label>Min notice (min)<br /><input name="minNoticeMin" type="number" defaultValue={page.minNoticeMin} min={0} style={{ width: '100%' }} /></label>
         <label>Max advance (days)<br /><input name="maxAdvanceDays" type="number" defaultValue={page.maxAdvanceDays} min={1} style={{ width: '100%' }} /></label>
         <label>Location<br /><input name="location" defaultValue={page.location ?? ''} style={{ width: '100%' }} /></label>
+        <label>
+          Extra guests (comma-separated emails)
+          <br />
+          <input
+            name="extraGuests"
+            defaultValue={page.extraGuests ?? ''}
+            placeholder="colleague@example.com, boss@example.com"
+            style={{ width: '100%' }}
+          />
+          <span style={{ fontSize: 12, color: '#6b7280' }}>
+            Added as attendees on every booking on this page.
+          </span>
+        </label>
         <label>Write target (Phase 4)
           <br />
           <select name="writeTargetId" style={{ width: '100%' }}>

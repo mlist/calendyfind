@@ -23,6 +23,8 @@ export async function updateProfileAction(formData: FormData) {
     redirect('/settings?error=Invalid+timezone');
   }
 
+  const notificationEmail = (formData.get('notificationEmail') as string)?.trim() || null;
+
   const workingHours: WorkingHours = {};
   for (const day of DAYS) {
     const enabled = formData.get(`day_${day}_enabled`) === 'on';
@@ -59,7 +61,7 @@ export async function updateProfileAction(formData: FormData) {
 
   await db
     .update(user)
-    .set({ timezone, workingHours: JSON.stringify(workingHours) })
+    .set({ timezone, workingHours: JSON.stringify(workingHours), notificationEmail })
     .where(eq(user.id, session.user.id));
 
   revalidatePath('/settings');

@@ -13,6 +13,8 @@ export interface NewEvent {
   organizerEmail: string;
   attendeeName: string;
   attendeeEmail: string;
+  /** Extra attendees: notification email + extra guests from the booking page. */
+  extraAttendees?: { name: string; email: string }[];
   createdAt: Date;
 }
 

@@ -46,6 +46,8 @@ export const bookingPage = sqliteTable('booking_page', {
   maxAdvanceDays: integer('max_advance_days').notNull().default(30),
   location: text('location'),
   writeTargetId: text('write_target_id').references(() => writeTarget.id, { onDelete: 'set null' }),
+  // Comma-separated extra guest emails added as attendees to every booking on this page
+  extraGuests: text('extra_guests'),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   tokenRotatedAt: integer('token_rotated_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })

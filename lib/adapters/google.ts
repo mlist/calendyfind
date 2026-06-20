@@ -86,13 +86,20 @@ export const googleAdapter: CalendarWriteAdapter = {
 
     assertGoogleHost(url);
 
+    // Build attendees list: primary visitor + any extra attendees (notification email, extra guests)
+    const attendees: { email: string; responseStatus: string }[] = [
+      { email: event.attendeeEmail, responseStatus: 'needsAction' },
+      ...(event.extraAttendees ?? []).map(a => ({ email: a.email, responseStatus: 'needsAction' })),
+    ];
+
     const body = {
-      iCalUID:  event.uid,
-      summary:  event.summary,
-      location: event.location,
-      start: { dateTime: event.startUtc.toISOString(), timeZone: 'UTC' },
-      end:   { dateTime: event.endUtc.toISOString(),   timeZone: 'UTC' },
-      sequence: event.sequence,
+      iCalUID:   event.uid,
+      summary:   event.summary,
+      location:  event.location,
+      start:     { dateTime: event.startUtc.toISOString(), timeZone: 'UTC' },
+      end:       { dateTime: event.endUtc.toISOString(),   timeZone: 'UTC' },
+      sequence:  event.sequence,
+      attendees,
     };
 
     const resp = await fetch(url, {

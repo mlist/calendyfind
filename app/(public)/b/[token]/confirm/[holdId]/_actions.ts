@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { user as userTable } from '@/lib/db/schema';
+import { user as userTable, bookingPage as bookingPageTable } from '@/lib/db/schema';
 import {
   getPageByToken,
   getBookingById,
@@ -46,11 +46,32 @@ export async function confirmAction(token: string, holdId: string, visitorTz = '
 
   // Organizer name + email for iMIP (NEVER sent to client; used only for calendar/email)
   const organizer = db
-    .select({ name: userTable.name, email: userTable.email })
+    .select({ name: userTable.name, email: userTable.email, notificationEmail: userTable.notificationEmail })
     .from(userTable)
     .where(eq(userTable.id, page!.userId))
     .get();
   if (!organizer) redirect(`/b/${token}?error=Internal+error`);
+
+  // Extra attendees: organizer's notification email + booking page's extra guests
+  const extraAttendees: { name: string; email: string }[] = [];
+  const extraRecipients: { name: string; email: string }[] = [];
+
+  if (organizer!.notificationEmail) {
+    const entry = { name: organizer!.name, email: organizer!.notificationEmail };
+    extraAttendees.push(entry);
+    extraRecipients.push(entry);
+  }
+
+  if (page!.extraGuests) {
+    for (const raw of page!.extraGuests.split(',')) {
+      const email = raw.trim();
+      if (email) {
+        const entry = { name: email, email };
+        extraAttendees.push(entry);
+        extraRecipients.push(entry);
+      }
+    }
+  }
 
   const event: NewEvent = {
     uid:            hold.icsUid,
@@ -63,6 +84,7 @@ export async function confirmAction(token: string, holdId: string, visitorTz = '
     organizerEmail: organizer!.email,
     attendeeName:   hold.attendeeName,
     attendeeEmail:  hold.attendeeEmail,
+    extraAttendees: extraAttendees.length > 0 ? extraAttendees : undefined,
     createdAt:      hold.createdAt ?? now,
   };
 
@@ -111,7 +133,7 @@ export async function confirmAction(token: string, holdId: string, visitorTz = '
   // Step 4 — Best-effort: send iMIP METHOD:REQUEST invite.
   // Email failure does NOT roll back the booking — only sets emailFailed flag.
   try {
-    await sendInviteEmail({ ...event, now, pageTitle: page!.title });
+    await sendInviteEmail({ ...event, now, pageTitle: page!.title, extraRecipients });
     appendAudit(db, { actor: 'public', action: 'email.sent', targetType: 'booking', targetId: bookingId, ip });
   } catch {
     setEmailFailed(db, bookingId);
