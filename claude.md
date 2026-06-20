@@ -224,6 +224,26 @@ Resolved: read-side recurrence = required; recurring bookings = out of scope; ti
 - Add that Google calendar back as an **availability source** so the app sees its own bookings as busy.
 - Optional: subscribe to the Google calendar's ICS from Outlook so bookings also appear in the work view.
 
+### External cancellation handling (accepted limitation)
+
+When the owner cancels a confirmed booking directly from their calendar client (e.g. deletes the event in
+Google Calendar or declines in Outlook), calendyfind is **not notified**. The `booking` row stays `confirmed`
+in the DB indefinitely.
+
+Accepted trade-off — option 3 (do nothing):
+- The visitor's calendar client receives a proper iMIP `METHOD:CANCEL` automatically from the owner's calendar
+  app, so the visitor's side is handled correctly without calendyfind's involvement.
+- The slot appears blocked in calendyfind's slot picker until the owner also cancels inside calendyfind.
+- **Practical mitigation:** if the owner's Google Calendar is subscribed as an availability source (per the
+  read/write decoupling pattern above), deleted events disappear from the ICS feed on the next cache refresh
+  (~15 min). The slot opens up for new bookings even though the DB row stays `confirmed`.
+
+Options that were explicitly ruled out:
+- **CalDAV polling** (check `externalEventRef` existence on a schedule): works for CalDAV and Google-via-CalDAV,
+  but adds polling complexity and only covers the current adapter.
+- **iMIP REPLY processing** (parse `PARTSTAT=DECLINED` reply emails): requires an inbound mail pipeline — too
+  much infrastructure for a self-hosted app.
+
 ### Load-bearing prerequisite to verify before building
 
 Confirm the org permits **internet calendar publishing** in Outlook/OWA so the Exchange work calendar can be
