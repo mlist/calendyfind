@@ -39,7 +39,8 @@ export const bookingPage = sqliteTable('booking_page', {
     .references(() => user.id, { onDelete: 'cascade' }),
   secretToken: text('secret_token').notNull().unique(),
   title: text('title').notNull(),
-  durationMin: integer('duration_min').notNull().default(30),
+  // JSON array of allowed durations in minutes, e.g. "[30,60,90]". Sorted ascending.
+  durationOptions: text('duration_options').notNull().default('[30]'),
   bufferMin: integer('buffer_min').notNull().default(0),
   minNoticeMin: integer('min_notice_min').notNull().default(60),
   maxAdvanceDays: integer('max_advance_days').notNull().default(30),

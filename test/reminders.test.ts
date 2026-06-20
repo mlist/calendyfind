@@ -33,7 +33,7 @@ function makePage(db: ReturnType<typeof makeDb>) {
     userId: 'user-1',
     secretToken: 'tok-abc',
     title: 'Test Page',
-    durationMin: 30,
+    durationOptions: '[30]',
     bufferMin: 0,
     minNoticeMin: 60,
     maxAdvanceDays: 30,

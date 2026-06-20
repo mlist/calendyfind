@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { bookingPage } from '@/lib/db/schema';
+import { parseDurationOptions } from '@/lib/booking/holds';
 import { createPageAction } from './_actions';
 
 export default async function BookingPagesPage({
@@ -48,7 +49,7 @@ export default async function BookingPagesPage({
                 <td style={{ padding: '6px' }}>
                   <Link href={`/settings/booking-pages/${p.id}`}>{p.title}</Link>
                 </td>
-                <td style={{ padding: '6px' }}>{p.durationMin} min</td>
+                <td style={{ padding: '6px' }}>{parseDurationOptions(p.durationOptions).join(', ')} min</td>
                 <td style={{ padding: '6px' }}>{p.active ? '✓ Active' : '— Inactive'}</td>
                 <td style={{ padding: '6px', fontSize: '0.85em', wordBreak: 'break-all' }}>
                   {p.active ? (
@@ -66,7 +67,9 @@ export default async function BookingPagesPage({
       <h2>Create new page</h2>
       <form action={createPageAction} style={{ display: 'grid', gap: '0.75rem', maxWidth: 400 }}>
         <label>Title<br /><input name="title" required style={{ width: '100%' }} /></label>
-        <label>Duration (min)<br /><input name="durationMin" type="number" defaultValue={30} min={5} max={480} style={{ width: '100%' }} /></label>
+        <label>Duration options (min, comma-separated)<br />
+          <input name="durationOptions" defaultValue="30" placeholder="e.g. 30, 60, 90" required style={{ width: '100%' }} />
+        </label>
         <label>Buffer (min)<br /><input name="bufferMin" type="number" defaultValue={0} min={0} max={120} style={{ width: '100%' }} /></label>
         <label>Min notice (min)<br /><input name="minNoticeMin" type="number" defaultValue={60} min={0} style={{ width: '100%' }} /></label>
         <label>Max advance (days)<br /><input name="maxAdvanceDays" type="number" defaultValue={30} min={1} style={{ width: '100%' }} /></label>

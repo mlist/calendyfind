@@ -60,7 +60,7 @@ function insertPage(
     userId,
     secretToken,
     title: 'Test Page',
-    durationMin: 30,
+    durationOptions: '[30]',
     bufferMin: 0,
     minNoticeMin: 0,
     maxAdvanceDays: 30,
@@ -114,6 +114,7 @@ describe('createHold — slot validation', () => {
 
     const result = createHold(db, {
       page,
+      durationMin: 30,
       validSlotStartMs: makeSlotSet(T_PLUS_2H),   // only 2h slot is valid
       slotStart: T_PLUS_1H,                         // caller sends 1h — not valid
       attendeeName: 'Alice',
@@ -135,6 +136,7 @@ describe('createHold — slot validation', () => {
 
     const result = createHold(db, {
       page,
+      durationMin: 30,
       validSlotStartMs: makeSlotSet(T_PLUS_1H),
       slotStart: T_PLUS_1H,
       attendeeName: 'Alice',
@@ -161,13 +163,13 @@ describe('createHold — pending_hold blocks the slot', () => {
     const valid = makeSlotSet(T_PLUS_1H);
 
     const r1 = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(r1.ok).toBe(true);
 
     const r2 = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Bob', attendeeEmail: 'bob@example.com', now: T_EPOCH,
     });
     expect(r2).toEqual({ ok: false, reason: 'SLOT_TAKEN' });
@@ -186,7 +188,7 @@ describe('createHold — expired hold frees the slot', () => {
 
     // Create hold at T_EPOCH with 1-min TTL — expires at T_EPOCH + 1min
     const r1 = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
       now: T_EPOCH, holdTtlMin: 1,
     });
@@ -195,7 +197,7 @@ describe('createHold — expired hold frees the slot', () => {
     // 2 minutes later: the hold is expired — slot should be available again
     const nowLater = new Date(T_EPOCH.getTime() + 2 * 60_000);
     const r2 = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Bob', attendeeEmail: 'bob@example.com',
       now: nowLater, holdTtlMin: 10,
     });
@@ -213,7 +215,7 @@ describe('confirmHold', () => {
     const page = getPageByToken(db, secretToken)!;
 
     const hr = createHold(db, {
-      page, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(hr.ok).toBe(true);
@@ -233,7 +235,7 @@ describe('confirmHold', () => {
     const valid = makeSlotSet(T_PLUS_1H);
 
     const hr = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(hr.ok).toBe(true);
@@ -244,7 +246,7 @@ describe('confirmHold', () => {
     // Even well after original TTL, confirmed booking stays busy
     const nowLater = new Date(T_EPOCH.getTime() + 60 * 60_000);
     const r2 = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Bob', attendeeEmail: 'bob@example.com', now: nowLater,
     });
     expect(r2).toEqual({ ok: false, reason: 'SLOT_TAKEN' });
@@ -256,7 +258,7 @@ describe('confirmHold', () => {
     const page = getPageByToken(db, secretToken)!;
 
     const hr = createHold(db, {
-      page, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
       now: T_EPOCH, holdTtlMin: 1,
     });
@@ -286,7 +288,7 @@ describe('cross-page isolation', () => {
     const pageA = getPageByToken(db, tokenA)!;
 
     const hr = createHold(db, {
-      page: pageA, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page: pageA, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(hr.ok).toBe(true);
@@ -310,7 +312,7 @@ describe('cancelBooking', () => {
     const valid = makeSlotSet(T_PLUS_1H);
 
     const hr = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(hr.ok).toBe(true);
@@ -323,7 +325,7 @@ describe('cancelBooking', () => {
 
     // Slot is free — new hold should succeed
     const r2 = createHold(db, {
-      page, validSlotStartMs: valid, slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: valid, slotStart: T_PLUS_1H,
       attendeeName: 'Bob', attendeeEmail: 'bob@example.com', now: T_EPOCH,
     });
     expect(r2.ok).toBe(true);
@@ -346,7 +348,7 @@ describe('getBookingsBusy', () => {
     const page = getPageByToken(db, secretToken)!;
 
     const hr = createHold(db, {
-      page, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(hr.ok).toBe(true);
@@ -365,7 +367,7 @@ describe('getBookingsBusy', () => {
     const page = getPageByToken(db, secretToken)!;
 
     createHold(db, {
-      page, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
       now: T_EPOCH, holdTtlMin: 10,
     });
@@ -380,7 +382,7 @@ describe('getBookingsBusy', () => {
     const page = getPageByToken(db, secretToken)!;
 
     createHold(db, {
-      page, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
       now: T_EPOCH, holdTtlMin: 1,
     });
@@ -397,7 +399,7 @@ describe('getBookingsBusy', () => {
     const page = getPageByToken(db, secretToken)!;
 
     const hr = createHold(db, {
-      page, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlotSet(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com', now: T_EPOCH,
     });
     expect(hr.ok).toBe(true);

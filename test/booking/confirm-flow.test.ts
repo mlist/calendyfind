@@ -53,7 +53,7 @@ function insertPage(db: DB, userId: string, writeTargetId: string | null = null)
   const secretToken = `tok-${Math.random().toString(36).slice(2)}`;
   db.insert(schema.bookingPage).values({
     id, userId, secretToken, title: 'Office Hours',
-    durationMin: 30, bufferMin: 0, minNoticeMin: 0, maxAdvanceDays: 30,
+    durationOptions: '[30]', bufferMin: 0, minNoticeMin: 0, maxAdvanceDays: 30,
     active: true, writeTargetId, createdAt: T,
   }).run();
   return { id, secretToken };
@@ -132,6 +132,7 @@ describe('confirm flow — calendar write failure', () => {
 
     const holdResult = createHold(db, {
       page,
+      durationMin: 30,
       validSlotStartMs: makeSlot(T_PLUS_1H),
       slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
@@ -166,7 +167,7 @@ describe('confirm flow — idempotency', () => {
     const page = getPageByToken(db, secretToken)!;
 
     const holdResult = createHold(db, {
-      page, validSlotStartMs: makeSlot(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlot(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
       now: T, holdTtlMin: 60,
     });
@@ -187,7 +188,7 @@ describe('confirm flow — idempotency', () => {
     const page = getPageByToken(db, secretToken)!;
 
     const holdResult = createHold(db, {
-      page, validSlotStartMs: makeSlot(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlot(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Alice', attendeeEmail: 'alice@example.com',
       now: T, holdTtlMin: 60,
     });
@@ -219,7 +220,7 @@ describe('confirm flow — orphan cleanup on finalize failure', () => {
 
     // Hold TTL = 1 min, created at T → expires at T + 1 min
     const holdResult = createHold(db, {
-      page, validSlotStartMs: makeSlot(T_PLUS_1H), slotStart: T_PLUS_1H,
+      page, durationMin: 30, validSlotStartMs: makeSlot(T_PLUS_1H), slotStart: T_PLUS_1H,
       attendeeName: 'Bob', attendeeEmail: 'bob@example.com',
       now: T, holdTtlMin: 1,
     });

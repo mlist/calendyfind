@@ -38,7 +38,7 @@ describe('secret-link rotation', () => {
       userId: 'u1',
       secretToken: oldToken,
       title: 'My Page',
-      durationMin: 30,
+      durationOptions: '[30]',
       bufferMin: 0,
       minNoticeMin: 60,
       maxAdvanceDays: 30,

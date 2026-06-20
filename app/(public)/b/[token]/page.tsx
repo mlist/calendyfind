@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { user as userTable } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getFreeSlots } from '@/lib/availability';
-import { getPageByToken } from '@/lib/booking/holds';
+import { getPageByToken, parseDurationOptions } from '@/lib/booking/holds';
 import { holdAction } from './_actions';
 
 export default async function PublicBookingPage({
@@ -12,7 +12,7 @@ export default async function PublicBookingPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ error?: string; tz?: string }>;
+  searchParams: Promise<{ error?: string; tz?: string; duration?: string }>;
 }) {
   const { token } = await params;
   const sp = await searchParams;
@@ -44,6 +44,13 @@ export default async function PublicBookingPage({
     }
   })();
 
+  const durationOptions = parseDurationOptions(page.durationOptions);
+  // Use ?duration= from URL, falling back to the first (smallest) option.
+  const selectedDuration = (() => {
+    const raw = Number(sp.duration);
+    return durationOptions.includes(raw) ? raw : durationOptions[0];
+  })();
+
   const now       = new Date();
   const rangeFrom = new Date(now.getTime() + page.minNoticeMin * 60_000);
   const rangeTo   = new Date(now.getTime() + page.maxAdvanceDays * 86_400_000);
@@ -51,7 +58,7 @@ export default async function PublicBookingPage({
   const { slots } = await getFreeSlots({
     userIds: [page.userId],
     range: { from: rangeFrom, to: rangeTo },
-    durationMin: page.durationMin,
+    durationMin: selectedDuration,
     bufferMin: page.bufferMin,
     minNoticeMin: page.minNoticeMin,
     now,
@@ -82,7 +89,39 @@ export default async function PublicBookingPage({
     <main style={{ maxWidth: 600, margin: '2rem auto', padding: '0 1rem', fontFamily: 'system-ui' }}>
       <h1>{page.title}</h1>
       {page.location && <p>📍 {page.location}</p>}
-      <p>Duration: {page.durationMin} min</p>
+
+      {/* Duration picker — only shown when the page offers multiple options */}
+      {durationOptions.length > 1 ? (
+        <div style={{ marginBottom: '1rem' }}>
+          <span style={{ marginRight: '0.5rem', fontWeight: 500 }}>Duration:</span>
+          {durationOptions.map(d => {
+            const active = d === selectedDuration;
+            const href = `?${new URLSearchParams({ ...(sp.tz ? { tz: sp.tz } : {}), duration: String(d) }).toString()}`;
+            return (
+              <a
+                key={d}
+                href={href}
+                style={{
+                  display: 'inline-block',
+                  marginRight: '0.5rem',
+                  padding: '4px 14px',
+                  borderRadius: 20,
+                  border: '1px solid #2563eb',
+                  background: active ? '#2563eb' : 'transparent',
+                  color: active ? '#fff' : '#2563eb',
+                  textDecoration: 'none',
+                  fontSize: 14,
+                  fontWeight: active ? 600 : 400,
+                }}
+              >
+                {d} min
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <p>Duration: {selectedDuration} min</p>
+      )}
 
       {sp.error && <p style={{ color: 'crimson', background: '#fff0f0', padding: '0.5rem', borderRadius: 4 }}>
         {decodeURIComponent(sp.error)}
@@ -109,6 +148,7 @@ export default async function PublicBookingPage({
         <p>No available slots in the next {page.maxAdvanceDays} days. Please check back later.</p>
       ) : (
         <form action={holdWithToken}>
+          <input type="hidden" name="duration" value={selectedDuration} />
           {/* Pass current display tz through so confirm/success pages can use it */}
           <input type="hidden" name="tz" id="tz-form-input" value={displayTz} />
           <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('DOMContentLoaded',function(){var p=new URLSearchParams(window.location.search).get('tz');if(p){var el=document.getElementById('tz-form-input');if(el)el.value=p;}});` }} />

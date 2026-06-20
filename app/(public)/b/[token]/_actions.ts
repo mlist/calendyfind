@@ -40,6 +40,12 @@ export async function holdAction(token: string, formData: FormData) {
   const page = getPageByToken(db, token);
   if (!page || !page.active) redirect(`/b/${token}?error=Page+not+available`);
 
+  // Validate chosen duration against the page's allowed options.
+  const { parseDurationOptions } = await import('@/lib/booking/holds');
+  const allowedDurations = parseDurationOptions(page.durationOptions);
+  const rawDuration = Number(formData.get('duration'));
+  const durationMin = allowedDurations.includes(rawDuration) ? rawDuration : allowedDurations[0];
+
   const now      = new Date();
   const slotStart = new Date(slotIso);
   if (isNaN(slotStart.getTime())) redirect(`/b/${token}?error=Invalid+slot`);
@@ -51,7 +57,7 @@ export async function holdAction(token: string, formData: FormData) {
   const { slots } = await getFreeSlots({
     userIds: [page.userId],
     range: { from: rangeFrom, to: rangeTo },
-    durationMin: page.durationMin,
+    durationMin,
     bufferMin: page.bufferMin,
     minNoticeMin: page.minNoticeMin,
     now,
@@ -59,7 +65,7 @@ export async function holdAction(token: string, formData: FormData) {
 
   const validSlotStartMs = new Set(slots.map(s => s.start.getTime()));
 
-  const result = createHold(db, { page, validSlotStartMs, slotStart, attendeeName, attendeeEmail, now });
+  const result = createHold(db, { page, durationMin, validSlotStartMs, slotStart, attendeeName, attendeeEmail, now });
 
   if (!result.ok) {
     const msg = result.reason === 'SLOT_TAKEN'

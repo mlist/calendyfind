@@ -13,6 +13,16 @@ import { getAdapter } from '@/lib/adapters';
 import { sendCancelEmail } from '@/lib/email';
 import { appendAudit } from '@/lib/audit';
 
+/** Parse comma-separated duration input (e.g. "30, 60, 90") into a sorted JSON-ready array. */
+function parseDurationOptionsInput(raw: string | null | undefined): number[] {
+  if (!raw) return [];
+  return [...new Set(
+    raw.split(',')
+      .map(s => parseInt(s.trim(), 10))
+      .filter(n => !isNaN(n) && n >= 5 && n <= 480),
+  )].sort((a, b) => a - b);
+}
+
 async function requireUser() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
@@ -32,15 +42,16 @@ export async function createPageAction(formData: FormData) {
   const user = await requireUser();
 
   const title       = (formData.get('title') as string)?.trim();
-  const durationMin = Number(formData.get('durationMin') ?? '30');
   const bufferMin   = Number(formData.get('bufferMin')   ?? '0');
   const minNoticeMin = Number(formData.get('minNoticeMin') ?? '60');
   const maxAdvanceDays = Number(formData.get('maxAdvanceDays') ?? '30');
   const location    = (formData.get('location') as string)?.trim() || null;
   const writeTargetId = (formData.get('writeTargetId') as string)?.trim() || null;
 
-  if (!title)        redirect('/settings/booking-pages?error=Title+is+required');
-  if (durationMin < 5 || durationMin > 480) redirect('/settings/booking-pages?error=Duration+must+be+5–480+min');
+  const durationOptions = parseDurationOptionsInput(formData.get('durationOptions') as string);
+
+  if (!title)                   redirect('/settings/booking-pages?error=Title+is+required');
+  if (durationOptions.length === 0) redirect('/settings/booking-pages?error=At+least+one+valid+duration+required+(5–480+min)');
   if (bufferMin < 0 || bufferMin > 120)     redirect('/settings/booking-pages?error=Buffer+must+be+0–120+min');
   if (minNoticeMin < 0)                     redirect('/settings/booking-pages?error=Min+notice+must+be+≥0');
   if (maxAdvanceDays < 1)                   redirect('/settings/booking-pages?error=Max+advance+must+be+≥1');
@@ -59,7 +70,7 @@ export async function createPageAction(formData: FormData) {
     userId: user.id,
     secretToken: generateToken(),
     title,
-    durationMin,
+    durationOptions: JSON.stringify(durationOptions),
     bufferMin,
     minNoticeMin,
     maxAdvanceDays,
@@ -83,14 +94,15 @@ export async function updatePageAction(formData: FormData) {
   if (!page) redirect('/settings/booking-pages?error=Not+found');
 
   const title       = (formData.get('title') as string)?.trim();
-  const durationMin = Number(formData.get('durationMin'));
   const bufferMin   = Number(formData.get('bufferMin'));
   const minNoticeMin = Number(formData.get('minNoticeMin'));
   const maxAdvanceDays = Number(formData.get('maxAdvanceDays'));
   const location    = (formData.get('location') as string)?.trim() || null;
   const writeTargetId = (formData.get('writeTargetId') as string)?.trim() || null;
+  const durationOptions = parseDurationOptionsInput(formData.get('durationOptions') as string);
 
   if (!title) redirect(`/settings/booking-pages/${id}?error=Title+is+required`);
+  if (durationOptions.length === 0) redirect(`/settings/booking-pages/${id}?error=At+least+one+valid+duration+required`);
 
   if (writeTargetId) {
     const wt = db.select({ id: writeTarget.id }).from(writeTarget)
@@ -99,7 +111,7 @@ export async function updatePageAction(formData: FormData) {
     if (!wt) redirect(`/settings/booking-pages/${id}?error=Invalid+write+target`);
   }
 
-  db.update(bookingPage).set({ title, durationMin, bufferMin, minNoticeMin, maxAdvanceDays, location, writeTargetId })
+  db.update(bookingPage).set({ title, durationOptions: JSON.stringify(durationOptions), bufferMin, minNoticeMin, maxAdvanceDays, location, writeTargetId })
     .where(and(eq(bookingPage.id, id), eq(bookingPage.userId, user.id)))
     .run();
 

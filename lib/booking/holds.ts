@@ -13,6 +13,20 @@ export type WriteTargetRow  = typeof writeTargetTable.$inferSelect;
 
 const HOLD_TTL_MIN = Number(process.env.HOLD_TTL_MIN ?? '10');
 
+/** Parse the JSON duration-options array stored on booking_page. Always returns ≥1 valid value. */
+export function parseDurationOptions(raw: string): number[] {
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [30];
+    const valid = arr
+      .filter((n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 5 && n <= 480)
+      .sort((a, b) => a - b);
+    return valid.length > 0 ? valid : [30];
+  } catch {
+    return [30];
+  }
+}
+
 function generateToken(): string {
   return randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
 }
@@ -115,6 +129,8 @@ export function getBookingsBusy(
 
 export interface CreateHoldOpts {
   page: BookingPageRow;
+  /** The specific duration the visitor chose (must be in page.durationOptions). */
+  durationMin: number;
   /** Pre-computed valid slot starts (Unix ms). Computed by caller via getFreeSlots. */
   validSlotStartMs: Set<number>;
   slotStart: Date;
@@ -129,9 +145,9 @@ export type CreateHoldResult =
   | { ok: false; reason: HoldError };
 
 export function createHold(db: DB, opts: CreateHoldOpts): CreateHoldResult {
-  const { page, validSlotStartMs, slotStart, attendeeName, attendeeEmail, now } = opts;
+  const { page, durationMin, validSlotStartMs, slotStart, attendeeName, attendeeEmail, now } = opts;
   const ttl = opts.holdTtlMin ?? HOLD_TTL_MIN;
-  const slotEnd   = new Date(slotStart.getTime() + page.durationMin * 60_000);
+  const slotEnd   = new Date(slotStart.getTime() + durationMin * 60_000);
   const expiresAt = new Date(now.getTime() + ttl * 60_000);
 
   // Slot boundary check (before the transaction — pure math)

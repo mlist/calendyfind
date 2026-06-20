@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "34995e5c-9e21-4133-a949-6787e333b242",
+  "id": "e652d1d3-d992-43cb-893e-50eb775c3787",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -881,13 +881,13 @@
           "notNull": true,
           "autoincrement": false
         },
-        "duration_min": {
-          "name": "duration_min",
-          "type": "integer",
+        "duration_options": {
+          "name": "duration_options",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": 30
+          "default": "'[30]'"
         },
         "buffer_min": {
           "name": "buffer_min",
