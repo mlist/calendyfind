@@ -55,6 +55,7 @@ export default async function SuccessPage({
       <table style={{ width: '100%', marginBottom: '1.5rem', borderCollapse: 'collapse', textAlign: 'left' }}>
         <tbody>
           <tr><td style={{ padding: '6px', color: '#555' }}>Event</td><td style={{ padding: '6px' }}><strong>{page!.title}</strong></td></tr>
+          {bk.title && <tr><td style={{ padding: '6px', color: '#555' }}>Topic</td><td style={{ padding: '6px' }}>{bk.title}</td></tr>}
           <tr><td style={{ padding: '6px', color: '#555' }}>Date</td><td style={{ padding: '6px' }}>{startLocal.toFormat('cccc, LLLL d, yyyy')}</td></tr>
           <tr>
             <td style={{ padding: '6px', color: '#555' }}>Time</td>

@@ -70,7 +70,7 @@ export async function cancelAction(cancelToken: string) {
         sequence:       booking.sequence,
         startUtc:       booking.startUtc!,
         endUtc:         booking.endUtc!,
-        summary:        `Meeting with ${organizer.name}`,
+        summary:        booking.title ? `${booking.title}` : `Meeting with ${organizer.name}`,
         organizerName:  organizer.name,
         organizerEmail: organizer.email,
         attendeeName:   booking.attendeeName,

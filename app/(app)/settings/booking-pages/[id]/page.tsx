@@ -132,6 +132,7 @@ export default async function BookingPageDetail({
             <tr style={{ borderBottom: '2px solid #ccc' }}>
               <th style={{ textAlign: 'left', padding: '4px' }}>When (UTC)</th>
               <th style={{ textAlign: 'left', padding: '4px' }}>Guest</th>
+              <th style={{ textAlign: 'left', padding: '4px' }}>Topic</th>
               <th style={{ padding: '4px' }} />
             </tr>
           </thead>
@@ -140,6 +141,7 @@ export default async function BookingPageDetail({
               <tr key={b.id} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '4px' }}>{b.startUtc?.toISOString().slice(0, 16).replace('T', ' ')}</td>
                 <td style={{ padding: '4px' }}>{b.attendeeName} &lt;{b.attendeeEmail}&gt;</td>
+                <td style={{ padding: '4px', color: b.title ? undefined : '#9ca3af', fontSize: 13 }}>{b.title ?? '—'}</td>
                 <td style={{ padding: '4px' }}>
                   <form action={ownerCancelBookingAction}>
                     <input type="hidden" name="bookingId" value={b.id} />

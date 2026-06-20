@@ -136,6 +136,8 @@ export interface CreateHoldOpts {
   slotStart: Date;
   attendeeName: string;
   attendeeEmail: string;
+  /** Optional topic suggested by the visitor. Stored in booking.title. */
+  guestTitle?: string;
   now: Date;
   holdTtlMin?: number;
 }
@@ -145,7 +147,7 @@ export type CreateHoldResult =
   | { ok: false; reason: HoldError };
 
 export function createHold(db: DB, opts: CreateHoldOpts): CreateHoldResult {
-  const { page, durationMin, validSlotStartMs, slotStart, attendeeName, attendeeEmail, now } = opts;
+  const { page, durationMin, validSlotStartMs, slotStart, attendeeName, attendeeEmail, guestTitle, now } = opts;
   const ttl = opts.holdTtlMin ?? HOLD_TTL_MIN;
   const slotEnd   = new Date(slotStart.getTime() + durationMin * 60_000);
   const expiresAt = new Date(now.getTime() + ttl * 60_000);
@@ -184,6 +186,7 @@ export function createHold(db: DB, opts: CreateHoldOpts): CreateHoldResult {
         organizerUserId: page.userId,
         attendeeName,
         attendeeEmail,
+        title: guestTitle ?? null,
         startUtc: slotStart,
         endUtc: slotEnd,
         status: 'pending_hold',

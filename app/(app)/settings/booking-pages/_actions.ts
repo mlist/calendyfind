@@ -214,7 +214,7 @@ export async function ownerCancelBookingAction(formData: FormData) {
         sequence:       newSeq,
         startUtc:       b.startUtc!,
         endUtc:         b.endUtc!,
-        summary:        `Meeting with ${organizer.name}`,
+        summary:        b.title ? `${b.title}` : `Meeting with ${organizer.name}`,
         organizerName:  organizer.name,
         organizerEmail: organizer.email,
         attendeeName:   b.attendeeName,

@@ -29,6 +29,7 @@ export async function holdAction(token: string, formData: FormData) {
   const slotIso      = (formData.get('slot') as string)?.trim();
   const attendeeName  = (formData.get('attendeeName') as string)?.trim();
   const visitorTz    = (formData.get('tz') as string)?.trim() || '';
+  const guestTitle   = ((formData.get('guestTitle') as string) ?? '').trim().slice(0, 100) || undefined;
 
   if (!slotIso || !attendeeName || !attendeeEmail) {
     redirect(`/b/${token}?error=All+fields+are+required`);
@@ -65,7 +66,7 @@ export async function holdAction(token: string, formData: FormData) {
 
   const validSlotStartMs = new Set(slots.map(s => s.start.getTime()));
 
-  const result = createHold(db, { page, durationMin, validSlotStartMs, slotStart, attendeeName, attendeeEmail, now });
+  const result = createHold(db, { page, durationMin, validSlotStartMs, slotStart, attendeeName, attendeeEmail, guestTitle, now });
 
   if (!result.ok) {
     const msg = result.reason === 'SLOT_TAKEN'

@@ -78,7 +78,7 @@ export async function confirmAction(token: string, holdId: string, visitorTz = '
     sequence:       hold.sequence,
     startUtc:       hold.startUtc!,
     endUtc:         hold.endUtc!,
-    summary:        page!.title,
+    summary:        hold.title ? `${page!.title}: ${hold.title}` : page!.title,
     location:       page!.location ?? undefined,
     organizerName:  organizer!.name,
     organizerEmail: organizer!.email,

@@ -178,6 +178,15 @@ export default async function PublicBookingPage({
             <label>Email<br />
               <input name="attendeeEmail" type="email" required style={{ width: '100%' }} />
             </label>
+            <label>
+              Topic <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span><br />
+              <input
+                name="guestTitle"
+                maxLength={100}
+                placeholder="Brief description of what the meeting is about"
+                style={{ width: '100%' }}
+              />
+            </label>
             <button type="submit" style={{ padding: '0.6rem 1.5rem', fontSize: '1rem' }}>Reserve slot →</button>
           </div>
         </form>
