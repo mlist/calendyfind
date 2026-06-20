@@ -102,6 +102,12 @@ export function checkLoginLimit(ip: string): RateLimitResult {
   return check(`login:${ip}`, LOGIN_MAX, 60_000);
 }
 
+// Free/busy feed: generous, prevents enumeration / DoS
+const FREEBUSY_MAX = env('RATE_LIMIT_FREEBUSY_PER_MIN', 60);
+export function checkFreeBusyLimit(ip: string): RateLimitResult {
+  return check(`freebusy:${ip}`, FREEBUSY_MAX, 60_000);
+}
+
 // Legacy shim — kept for any callers that haven't been updated yet.
 export function checkRateLimit(key: string, maxRequests = 20, windowMs = 60_000): boolean {
   return check(key, maxRequests, windowMs).allowed;

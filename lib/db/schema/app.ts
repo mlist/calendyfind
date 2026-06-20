@@ -109,6 +109,21 @@ export const bookingAttendee = sqliteTable('booking_attendee', {
 
 // Phase 6: audit_log and reminder defined after booking to avoid forward-reference issues.
 
+export const freebusyFeed = sqliteTable('freebusy_feed', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  secretToken: text('secret_token').notNull().unique(),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  lastRotatedAt: integer('last_rotated_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+}, (t) => [
+  uniqueIndex('freebusy_feed_user_unique').on(t.userId),
+]);
+
 export type AuditAction =
   | 'user.create' | 'user.disable' | 'user.enable' | 'user.role_change' | 'user.password_reset' | 'user.delete'
   | 'write_target.create' | 'write_target.update' | 'write_target.delete'
@@ -117,7 +132,8 @@ export type AuditAction =
   | 'calendar.write_success' | 'calendar.write_failure'
   | 'email.sent' | 'email.failed'
   | 'auth.login_success' | 'auth.login_failure'
-  | 'rate_limit.blocked';
+  | 'rate_limit.blocked'
+  | 'freebusy_feed.create' | 'freebusy_feed.rotate' | 'freebusy_feed.revoke';
 
 export const auditLog = sqliteTable('audit_log', {
   id: text('id').primaryKey(),

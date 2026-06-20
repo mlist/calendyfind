@@ -56,6 +56,16 @@ export default async function DashboardPage() {
           Meetings →
         </a>
       </p>
+      <p style={{ marginBottom: '0.5rem' }}>
+        <a href="/settings/freebusy" style={{ color: '#2563eb' }}>
+          Free/busy feed →
+        </a>
+      </p>
+      <p style={{ marginBottom: '0.5rem' }}>
+        <a href="/tools/slot-checker" style={{ color: '#2563eb' }}>
+          Slot checker →
+        </a>
+      </p>
       {user.role === 'admin' && (
         <p style={{ marginBottom: '0.5rem' }}>
           <a href="/admin" style={{ color: '#2563eb' }}>

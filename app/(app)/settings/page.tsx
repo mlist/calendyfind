@@ -63,6 +63,9 @@ export default async function SettingsPage({ searchParams }: PageProps) {
         <a href="/settings/targets" style={{ color: '#6b7280' }}>
           Write Targets
         </a>
+        <a href="/settings/freebusy" style={{ color: '#6b7280' }}>
+          Free/busy feed
+        </a>
         <span style={{ flex: 1 }} />
         <a href="/dashboard" style={{ color: '#6b7280' }}>
           ← Dashboard
