@@ -29,19 +29,32 @@ export async function updateProfileAction(formData: FormData) {
     if (!enabled) continue;
 
     const start = ((formData.get(`day_${day}_start`) as string) || '').trim();
-    const end = ((formData.get(`day_${day}_end`) as string) || '').trim();
+    const end   = ((formData.get(`day_${day}_end`)   as string) || '').trim();
 
-    if (!start || !end) {
-      redirect(`/settings?error=Missing+times+for+${day}`);
-    }
-    if (!isValidHHMM(start) || !isValidHHMM(end)) {
+    if (!start || !end) redirect(`/settings?error=Missing+times+for+${day}`);
+    if (!isValidHHMM(start) || !isValidHHMM(end))
       redirect(`/settings?error=Invalid+time+format+for+${day}+(use+HH%3AMM)`);
-    }
-    if (start >= end) {
+    if (start >= end)
       redirect(`/settings?error=Start+must+be+before+end+for+${day}`);
-    }
 
-    workingHours[day] = [{ start, end }];
+    const lunchEnabled = formData.get(`day_${day}_lunch_enabled`) === 'on';
+
+    if (lunchEnabled) {
+      const lunchStart = ((formData.get(`day_${day}_lunch_start`) as string) || '').trim();
+      const lunchEnd   = ((formData.get(`day_${day}_lunch_end`)   as string) || '').trim();
+
+      if (!lunchStart || !lunchEnd)
+        redirect(`/settings?error=Missing+lunch+times+for+${day}`);
+      if (!isValidHHMM(lunchStart) || !isValidHHMM(lunchEnd))
+        redirect(`/settings?error=Invalid+lunch+time+format+for+${day}+(use+HH%3AMM)`);
+      if (lunchStart <= start || lunchEnd <= lunchStart || lunchEnd >= end)
+        redirect(`/settings?error=Lunch+break+must+fall+inside+working+hours+for+${day}`);
+
+      // Two ranges: morning block + afternoon block
+      workingHours[day] = [{ start, end: lunchStart }, { start: lunchEnd, end }];
+    } else {
+      workingHours[day] = [{ start, end }];
+    }
   }
 
   await db

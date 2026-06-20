@@ -101,35 +101,43 @@ export default async function SettingsPage({ searchParams }: PageProps) {
         <section>
           <h2 style={{ marginBottom: '0.75rem', fontSize: 16 }}>Working Hours</h2>
           <p style={{ marginBottom: '0.75rem', fontSize: 12, color: '#6b7280' }}>
-            Tick each day you are available and set the time range. Leave unticked = unavailable.
+            Tick each day you are available and set the time range. Add a lunch break to split the
+            day into two bookable blocks. Leave unticked = unavailable.
           </p>
-          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 560 }}>
             <thead>
               <tr style={{ fontSize: 12, color: '#6b7280' }}>
                 <th style={{ textAlign: 'left', padding: '4px 12px 4px 0', fontWeight: 500 }}>Day</th>
-                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>Available</th>
+                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>On</th>
                 <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>From</th>
                 <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>To</th>
+                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>Lunch</th>
+                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>Lunch start</th>
+                <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>Lunch end</th>
               </tr>
             </thead>
             <tbody>
               {DAYS.map((day) => {
-                const range = wh[day]?.[0];
+                const ranges = wh[day] ?? [];
+                // ranges[0] = morning (or full day), ranges[1] = afternoon (if lunch break)
+                const hasLunch = ranges.length >= 2;
+                const morningStart = ranges[0]?.start ?? '09:00';
+                const dayEnd      = hasLunch ? (ranges[1]?.end ?? '17:00') : (ranges[0]?.end ?? '17:00');
+                const lunchStart  = hasLunch ? ranges[0].end  : '12:00';
+                const lunchEnd    = hasLunch ? ranges[1].start : '13:00';
+
                 return (
                   <tr key={day}>
                     <td style={{ padding: '6px 12px 6px 0', fontSize: 14 }}>{DAY_LABELS[day]}</td>
                     <td style={{ padding: '6px 8px' }}>
-                      <input
-                        type="checkbox"
-                        name={`day_${day}_enabled`}
-                        defaultChecked={!!range}
-                      />
+                      <input type="checkbox" name={`day_${day}_enabled`} defaultChecked={ranges.length > 0} />
                     </td>
                     <td style={{ padding: '6px 8px' }}>
                       <input
                         type="text"
                         name={`day_${day}_start`}
-                        defaultValue={range?.start ?? '09:00'}
+                        defaultValue={morningStart}
                         placeholder="09:00"
                         pattern="\d{2}:\d{2}"
                         style={{ ...inp, width: 70 }}
@@ -139,10 +147,33 @@ export default async function SettingsPage({ searchParams }: PageProps) {
                       <input
                         type="text"
                         name={`day_${day}_end`}
-                        defaultValue={range?.end ?? '17:00'}
+                        defaultValue={dayEnd}
                         placeholder="17:00"
                         pattern="\d{2}:\d{2}"
                         style={{ ...inp, width: 70 }}
+                      />
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                      <input type="checkbox" name={`day_${day}_lunch_enabled`} defaultChecked={hasLunch} />
+                    </td>
+                    <td style={{ padding: '6px 8px' }}>
+                      <input
+                        type="text"
+                        name={`day_${day}_lunch_start`}
+                        defaultValue={lunchStart}
+                        placeholder="12:00"
+                        pattern="\d{2}:\d{2}"
+                        style={{ ...inp, width: 70, color: hasLunch ? undefined : '#9ca3af' }}
+                      />
+                    </td>
+                    <td style={{ padding: '6px 8px' }}>
+                      <input
+                        type="text"
+                        name={`day_${day}_lunch_end`}
+                        defaultValue={lunchEnd}
+                        placeholder="13:00"
+                        pattern="\d{2}:\d{2}"
+                        style={{ ...inp, width: 70, color: hasLunch ? undefined : '#9ca3af' }}
                       />
                     </td>
                   </tr>
@@ -150,6 +181,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
               })}
             </tbody>
           </table>
+          </div>
         </section>
 
         <button
