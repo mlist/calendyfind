@@ -5,6 +5,7 @@ import { user as userTable } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getFreeSlots } from '@/lib/availability';
 import { getPageByToken, parseDurationOptions } from '@/lib/booking/holds';
+import { COMMON_TIMEZONES } from '@/lib/validation';
 import { holdAction } from './_actions';
 
 export default async function PublicBookingPage({
@@ -127,22 +128,36 @@ export default async function PublicBookingPage({
         {decodeURIComponent(sp.error)}
       </p>}
 
-      {/* Timezone switcher — JS detects local tz on first load and redirects */}
-      <p style={{ fontSize: 13, color: '#6b7280' }}>
-        Times shown in <strong>{tzLabel}</strong>.
-        {requestedTz && (
-          <> <a href={`/b/${token}`} style={{ color: '#2563eb', marginLeft: 4 }}>Switch to host timezone</a></>
-        )}
-      </p>
+      {/* Timezone picker — auto-detects on first load, visitor can also change manually */}
+      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <span>Times shown in</span>
+        <select
+          id="tz-picker"
+          defaultValue={displayTz}
+          style={{ fontSize: 13, padding: '2px 6px', border: '1px solid #d1d5db', borderRadius: 4, background: '#fff' }}
+        >
+          {/* Always include the current value even if not in COMMON_TIMEZONES */}
+          {!COMMON_TIMEZONES.includes(displayTz) && (
+            <option value={displayTz}>{displayTz}</option>
+          )}
+          {COMMON_TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+        </select>
+      </div>
 
-      {/* Client-side tz detection: redirect once to ?tz= if not already set */}
-      {!requestedTz && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(tz&&tz!=='${ownerTz}'){var u=new URL(window.location.href);u.searchParams.set('tz',tz);window.history.replaceState(null,'',u.toString())}}catch(e){}})();`,
-          }}
-        />
-      )}
+      {/* Picker: navigate on change. Auto-detect on first load if no ?tz= yet. */}
+      <script dangerouslySetInnerHTML={{ __html: `
+(function(){
+  var picker = document.getElementById('tz-picker');
+  if(picker){
+    picker.addEventListener('change',function(){
+      var u=new URL(window.location.href);
+      u.searchParams.set('tz',picker.value);
+      window.location.replace(u.toString());
+    });
+  }
+  ${!requestedTz ? `try{var d=Intl.DateTimeFormat().resolvedOptions().timeZone;if(d&&d!=='${ownerTz}'){var u=new URL(window.location.href);u.searchParams.set('tz',d);window.location.replace(u.toString());}}catch(e){}` : ''}
+})();
+      `}} />
 
       {slots.length === 0 ? (
         <p>No available slots in the next {page.maxAdvanceDays} days. Please check back later.</p>
@@ -150,8 +165,7 @@ export default async function PublicBookingPage({
         <form action={holdWithToken}>
           <input type="hidden" name="duration" value={selectedDuration} />
           {/* Pass current display tz through so confirm/success pages can use it */}
-          <input type="hidden" name="tz" id="tz-form-input" value={displayTz} />
-          <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('DOMContentLoaded',function(){var p=new URLSearchParams(window.location.search).get('tz');if(p){var el=document.getElementById('tz-form-input');if(el)el.value=p;}});` }} />
+          <input type="hidden" name="tz" value={displayTz} />
           <h2>Choose a time</h2>
           {Array.from(grouped.entries()).map(([date, daySlots]) => (
             <fieldset key={date} style={{ marginBottom: '1rem', border: '1px solid #ddd', borderRadius: 4, padding: '0.75rem' }}>
