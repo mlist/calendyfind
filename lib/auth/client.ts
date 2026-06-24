@@ -3,8 +3,9 @@ import { createAuthClient } from 'better-auth/react';
 import { adminClient } from 'better-auth/client/plugins';
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BASE_PATH
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}${process.env.NEXT_PUBLIC_BASE_PATH}`
-    : undefined,
+  baseURL:
+    typeof window !== 'undefined' && process.env.NEXT_PUBLIC_BASE_PATH
+      ? `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}`
+      : undefined,
   plugins: [adminClient()],
 });
