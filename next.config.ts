@@ -31,6 +31,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   basePath: process.env.BASE_PATH ?? '',
+  trailingSlash: true,
   serverExternalPackages: ['better-sqlite3'],
   async headers() {
     return [
