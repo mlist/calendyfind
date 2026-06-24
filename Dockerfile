@@ -15,13 +15,17 @@ RUN npm ci --legacy-peer-deps
 # Copy source
 COPY . .
 
-# Build Next.js — better-auth initializes at module load time, so the secret
-# must exist during the build even though it is only used at runtime.
-# Pass a placeholder here; override with the real value via docker run -e or compose env.
+# Build Next.js — some env vars are baked into the client bundle at build time.
+# Pass real values for NEXT_PUBLIC_* and BASE_PATH via --build-arg.
+# BETTER_AUTH_SECRET only needs a placeholder (it is runtime-only).
 ARG BETTER_AUTH_SECRET=build-time-placeholder
+ARG NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+ARG BASE_PATH=
 ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
+ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL
+ENV BASE_PATH=$BASE_PATH
 RUN npm run build
-# Clear the build-time placeholder so it is not baked into the runtime env.
+# Clear the build-time placeholder; real secret must be supplied at runtime.
 ENV BETTER_AUTH_SECRET=
 
 ENV NODE_ENV=production

@@ -13,7 +13,9 @@ export function middleware(req: NextRequest) {
     pathname.startsWith('/dashboard') || pathname.startsWith('/admin');
 
   if (isProtected && !hasCookie) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
