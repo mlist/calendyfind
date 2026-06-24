@@ -22,6 +22,9 @@ ARG BETTER_AUTH_SECRET=build-time-placeholder
 ARG BASE_PATH=
 ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
 ENV BASE_PATH=$BASE_PATH
+# NEXT_PUBLIC_BASE_PATH is inlined into the client bundle by webpack — derive it
+# from BASE_PATH so only one variable needs to be set in .env / docker-compose.
+ENV NEXT_PUBLIC_BASE_PATH=$BASE_PATH
 RUN npm run build
 # Clear the build-time placeholder; real secret must be supplied at runtime.
 ENV BETTER_AUTH_SECRET=
