@@ -1,8 +1,13 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        # BASE_PATH is baked into the Next.js bundle at build time.
+        # Set it in .env to match your nginx subpath (e.g. /calendyfind).
+        BASE_PATH: ${BASE_PATH:-}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       # Persist the SQLite database across container restarts
       - ./data:/app/data
@@ -10,6 +15,5 @@ services:
       - .env
     environment:
       DATABASE_URL: /app/data/app.db
-      BETTER_AUTH_URL: http://localhost:3000
       NODE_ENV: production
     restart: unless-stopped
